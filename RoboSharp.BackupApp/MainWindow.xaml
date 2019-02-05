@@ -9,15 +9,18 @@
         ContentRendered="Window_ContentRendered"
         Title="Backup App" Height="650" Width="725" ResizeMode="NoResize">
   <Window.Resources>
-    <Style TargetType="Label">
+    <!--<Style TargetType="Label">
       <Setter Property="Margin"
               Value="5" />
       <Setter Property="HorizontalContentAlignment"
               Value="Right" />
       <Setter Property="Height"
               Value="23" />
-    </Style>
+    </Style>-->
   </Window.Resources>
+  <Window.TaskbarItemInfo>
+    <TaskbarItemInfo x:Name="taskBarItemInfo"/>
+  </Window.TaskbarItemInfo>
   <Grid>
     <Grid.RowDefinitions>
       <RowDefinition Height="*"/>
@@ -25,19 +28,103 @@
     </Grid.RowDefinitions>
     <TabControl>
       <TabItem Header="Backup" Name="BackupTab">
-        
+        <StackPanel>
+          <Label Content="Source" Margin="5,0" HorizontalAlignment="Left" ></Label>
+          <DockPanel>
+            <Button DockPanel.Dock="Right" Name="SourceBrowseButton" Margin="5,0"
+               Width="75" Content="Browse" Click="SourceBrowseButton_Click" />
+            <TextBox Name="Source" HorizontalAlignment="Stretch" TextWrapping="Wrap"  Margin="5,0" />
+          </DockPanel>
+          <Label Content="Destination" Margin="5,0" HorizontalAlignment="Left" ></Label>
+          <DockPanel>
+            <Button DockPanel.Dock="Right" Name="DestinationBrowseButton" Margin="5,0"
+               Width="75" Content="Browse" Click="DestinationBrowseButton_Click" />
+            <TextBox Name="Destination" HorizontalAlignment="Stretch" TextWrapping="Wrap"  Margin="5,0" />
+          </DockPanel>
+          <StackPanel Height="20"></StackPanel>
+          <Label Content="Current Folder" Margin="5,0" HorizontalAlignment="Left" ></Label>
+          <TextBox Name="CurrentFolder" IsReadOnly="True" Margin="5,0"   HorizontalAlignment="Stretch" />
+          <Label Content="Current File" Margin="5,0" HorizontalAlignment="Left" ></Label>
+          <DockPanel>
+            <TextBox DockPanel.Dock="Right" Width="60" x:Name="txtFilePc" 
+              IsReadOnly="True" Margin="5,0"/>
+            <TextBox DockPanel.Dock="Right" Width="100" x:Name="txtInFolder" 
+              IsReadOnly="True" Margin="5,0"/>
+
+            <TextBox Name="txtCurrentFile" IsReadOnly="True" Margin="5,0" TextWrapping="Wrap" HorizontalAlignment="Stretch" />
+            
+          </DockPanel>
+          <StackPanel Height="20"></StackPanel>
+          <DockPanel>
+            <DockPanel  DockPanel.Dock="Right">
+              <Grid Grid.Column="1" Margin="5,0">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition />
+                  <ColumnDefinition />
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Vertical"
+                    Grid.Column="0">
+                  <StackPanel.Resources>
+                    <Style TargetType="Label">
+                      <Setter Property="Margin"
+                              Value="5" />
+                      <Setter Property="HorizontalContentAlignment"
+                              Value="Right" />
+                      <Setter Property="Height"
+                              Value="23" />
+                    </Style>
+
+                  </StackPanel.Resources>
+                  <Label Content="Folders:" />
+                  <Label Content="Files:" />
+                  <Label Content="MBytes:" />
+                  <Label Content="Errors:" />
+                  <Label Content="Time Left :" />
+                  <Label Content="Total Time :" />
+                  <Label Content="ETA :" />
+                  <!--<Label Content="Total Folders :" />
+                  <Label Content="File PC :" />
+                  <Label Content="Total Bytes :" />-->
+
+                </StackPanel>
+                <StackPanel Orientation="Vertical"
+                    Grid.Column="1">
+                  <StackPanel.Resources>
+                    <Style TargetType="TextBox">
+                      <Setter Property="Margin" Value="5" />
+                      <Setter Property="Height" Value="23" />
+                      <Setter Property="HorizontalContentAlignment" Value="Right" />
+                      <Setter Property="Width" Value="115" />
+                      <Setter Property="HorizontalAlignment" Value="Left" />
+                    </Style>
+                  </StackPanel.Resources>
+                  <TextBox x:Name="txtFolderCount"/>
+                  <TextBox x:Name="txtFileCount" />
+                  <TextBox x:Name="txtMByteCount" />
+                  <TextBox x:Name="txtErrorCount" />
+                  <TextBox x:Name="txtTimeLeft" />
+                  <TextBox x:Name="txtTotalTime" />
+                  <TextBox x:Name="txtETA" />
+                  <!--<TextBox x:Name="txtTotalFolders" />
+                  <TextBox x:Name="txtFilePc1" />
+                  <TextBox x:Name="txtTotalBytes" />-->
+                </StackPanel>
+              </Grid>
+            </DockPanel>
+            <DockPanel>
+              <StackPanel Margin="5,0">
+                <TextBlock Text="Final Metrics"></TextBlock>
+                <DataGrid Name="MetricsGrid" ></DataGrid>
+              </StackPanel>
+
+            </DockPanel>
+          </DockPanel>
+        </StackPanel>
       </TabItem>
+      
       <TabItem Header="Options" Name="OptionsTab">
         <Grid Name="OptionsGrid">
 
-          <TextBlock HorizontalAlignment="Left" Margin="34,10,0,0" TextWrapping="Wrap" Text="Source" VerticalAlignment="Top"/>
-          <TextBox Name="Source" HorizontalAlignment="Left" Height="23" Margin="34,26,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="589"/>
-          <Button Name="SourceBrowseButton" HorizontalAlignment="Left" VerticalAlignment="Top" Width="75" Content="Browse" Margin="628,26,0,0" Click="SourceBrowseButton_Click" />
-          <TextBlock Name="CurrentFolder" HorizontalAlignment="Left" Margin="44,50,0,0" TextWrapping="Wrap"  VerticalAlignment="Top" Width="579" RenderTransformOrigin="0.532,0.938" Height="21"/>
-
-          <TextBlock HorizontalAlignment="Left" Margin="34,80,0,0" TextWrapping="Wrap" Text="Destination" VerticalAlignment="Top"/>
-          <TextBox Name="Destination" HorizontalAlignment="Left" Height="23" Margin="34,96,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="589"/>
-          <Button Name="DestinationBrowseButton" HorizontalAlignment="Left" VerticalAlignment="Top" Width="75" Content="Browse" Margin="628,95,0,0" Click="DestinationBrowseButton_Click" />
           <TextBox Name="Parameters" HorizontalAlignment="Left" Margin="34,125,0,0" TextWrapping="Wrap" IsReadOnly="True"
                      VerticalAlignment="Top" Width="589" RenderTransformOrigin="0.532,0.938" Height="21"/>
 
@@ -245,63 +332,19 @@
 
                   </Grid>
                 </Expander>
-                <TextBlock Text="Current Folder"></TextBlock>
-                <ListView x:Name="FolderList" ></ListView>
-                <DataGrid Name="MetricsGrid" 
-                  AutoGenerateColumns="True"        ></DataGrid>
-
               </StackPanel>
             </ScrollViewer>
-            <Grid Grid.Column="1" Margin="34,155,10,50">
-              <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="200" />
-              </Grid.ColumnDefinitions>
-              <StackPanel Orientation="Vertical"
-                    Grid.Column="0">
-                <Label Content="Folder Count :" />
-                <Label Content="Total Folders :" />
-                <Label Content="File Count :" />
-                <Label Content="File PC :" />
-                <Label Content="Byte Count :" />
-                <Label Content="Total Bytes :" />
-                <Label Content="Time Left :" />
-                <Label Content="Total Time :" />
-                <Label Content="Error Count :" />
-
-              </StackPanel>
-              <StackPanel Orientation="Vertical"
-                    Grid.Column="1">
-                <StackPanel.Resources>
-                  <Style TargetType="TextBox">
-                    <Setter Property="Margin" Value="5" />
-                    <Setter Property="Height" Value="23" />
-                    <Setter Property="HorizontalContentAlignment" Value="Right" />
-                    <Setter Property="Width" Value="115" />
-                    <Setter Property="HorizontalAlignment" Value="Left" />
-                  </Style>
-                </StackPanel.Resources>
-                <TextBox x:Name="txtFolderCount"/>
-                <TextBox x:Name="txtTotalFolders" />
-                <TextBox x:Name="txtFileCount" />
-                <TextBox x:Name="txtFilePc" />
-                <TextBox x:Name="txtByteCount" />
-                <TextBox x:Name="txtTotalBytes" />
-                <TextBox x:Name="txtTimeLeft" />
-                <TextBox x:Name="txtTotalTime" />
-                <TextBox x:Name="txtErrorCount" />
-              </StackPanel>
-            </Grid>
           </Grid>
         </Grid>
       </TabItem>
+
       <TabItem Header="Progress" Name="ProgressTab">
         <Grid Name="ProgressGrid" IsEnabled="false">
           <TextBlock HorizontalAlignment="Left" Margin="40,27,0,0" TextWrapping="Wrap" Text="Current Operation" VerticalAlignment="Top" FontWeight="Bold"/>
           <TextBlock Name="CurrentOperation" HorizontalAlignment="Left" Margin="158,27,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#FF000099"/>
 
           <TextBlock HorizontalAlignment="Left" Margin="37,93,0,0" TextWrapping="Wrap" Text="Name" VerticalAlignment="Top" FontWeight="Bold"/>
-          <TextBlock Name="CurrentFile" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" HorizontalAlignment="Left" Margin="37,114,0,0" VerticalAlignment="Top" Width="636" Height="83" Foreground="#FF009900"/>
+          <TextBlock Name="CurrentFile1" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" HorizontalAlignment="Left" Margin="37,114,0,0" VerticalAlignment="Top" Width="636" Height="83" Foreground="#FF009900"/>
           <TextBlock HorizontalAlignment="Left" Margin="37,218,0,0" TextWrapping="Wrap" Text="Current File Copy Progress" VerticalAlignment="Top" FontWeight="Bold"/>
           <ProgressBar Minimum="0" Maximum="100" Name="FileProgress" HorizontalAlignment="Left" Height="20" Margin="40,239,0,0" VerticalAlignment="Top" Width="625"/>
           <TextBlock HorizontalAlignment="Left" Margin="40,60,0,0" TextWrapping="Wrap" Text="Size (bytes)" VerticalAlignment="Top" FontWeight="Bold"/>
@@ -309,18 +352,21 @@
           <TextBlock Name="FileProgressPercent" FontWeight="Bold" TextAlignment="Right" HorizontalAlignment="Left" Margin="615,218,0,0" TextWrapping="Wrap" VerticalAlignment="Top" RenderTransformOrigin="1.76,-0.062"/>
         </Grid>
       </TabItem>
+
       <TabItem Header="Errors" Name="ErrorsTab">
         <DataGrid Name="ErrorGrid"></DataGrid>
       </TabItem>
     </TabControl>
+    
     <DockPanel Grid.Row="1"  >
-      <Button Name="FolderScanButton" Margin="5" Content="FolderScan" Width="75" Click="FolderScanButton_Click" />
-      <Button  Name="PauseResumeButton" Click="PauseResumeButton_Click"  Margin="5" Content="Pause" Width="75" />
-      <Button Name="CancelButton" Click="CancelButton_Click" Margin="5" Content="Cancel" Width="75" />
+      <!--<Button Name="FolderScanButton" Margin="5" Content="FolderScan" Width="75" Click="FolderScanButton_Click" />-->
+      <Button  Name="PauseButton" Click="PauseButton_Click"  Margin="5" Content="Pause" Width="75" IsEnabled="False"/>
+      <Button Name="CancelButton" Click="CancelButton_Click" Margin="5" 
+              IsEnabled="False" Content="Cancel" Width="75" />
 
-      <Button  Content="Backup"  Margin="5"  Width="75" Click="BackupButton_Click"/>
+      <Button Name="BackupButton" Content="Backup"  Margin="5"  Width="75" Click="BackupButton_Click"/>
       <Grid>
-      <ProgressBar Minimum="0" Maximum="0" Name="FolderProgress" 
+        <ProgressBar Minimum="0" Maximum="0" Name="FolderProgress" 
        Height="20" Margin="5"  Value="0"/>
         <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center">
           <TextBlock.Text>
