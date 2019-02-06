@@ -396,11 +396,9 @@ namespace RoboSharp.BackupApp {
       MessageBoxHelper.PrepToCenterMessageBoxOnForm(this);
     }
 
-    private void ScanThenCopy(RoboCommand copy) {
-      Folders = new List<string>();
+    void ScanThenCopy(RoboCommand copy) {
       Folders = new List<string>();
       CurrentFolder.Text = "Counting Folders";
-      backupIsRunning = true;
 
       RunTimer.Reset();
       PauseTimer.Stop();
@@ -409,20 +407,25 @@ namespace RoboSharp.BackupApp {
       CancelButton.IsEnabled = true;
       PauseButton.IsEnabled = true;
       BackupButton.IsEnabled = false;
+      source = Source.Text;
+      exclude = ExcludeDirectories.Text;
+      if (backupIsRunning) {
+      }
+      backupIsRunning = true;
+      prepareIsRunning = true;
+      FolderProgress.Maximum = 100;
+      FolderProgress.Value = 0;
 
-      string source = Source.Text;
-      string exclude = ExcludeDirectories.Text;
-      Task.Run(async () => {
-        DirectoryInfo di = new DirectoryInfo(source);
-        tf.TotalFolders = CountFolders(di, "*", exclude);
-        if (tf.TotalFolders == -1) {
-          StopCurrentBackup();
-          return;
-        }
+      task1 = AnimateAsync();
+      task2 = PrepareForCopy();
+      task2.ContinueWith(task => {
         var ts = RunTimer.Elapsed;
-        Debug.WriteLine($"End of PreScan {ts}");
+
+        Debug.WriteLine($"Start of Copy {ts}");
+
         Dispatcher.Invoke(() => {
           FolderProgress.Maximum = tf.TotalFolders;
+          FolderProgress.Value = 0;
         });
         try {
           Task t1 = copy.Start();
@@ -431,55 +434,109 @@ namespace RoboSharp.BackupApp {
           var v1 = e1;
           throw;
         }
-        while (backupIsRunning) {
-          await Task.Delay(200);
-          await Dispatcher.BeginInvoke((Action)(() => {
-            txtMBytes.Text = $"{(tf.BytesCopied / 1024 / 1024):#,##0}";
-            txtErrors.Text = "";
-            txtFiles.Text = $"{(tf.FilesCopied):#,##0}";
-            txtFolders.Text = $"{(tf.FolderCount):#,##0}";
-            FolderProgress.Value = tf.FolderCount;
-            if (cf != null && tf.FolderCount != 0) {
-              CurrentFolder.Text = cf.Name;
-              taskBarItemInfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.Normal;
-              taskBarItemInfo.ProgressValue = (double)tf.FolderCount / (double)tf.TotalFolders;
-              if (cf.FileSize > 100 * 1024) {
-                txtCurrentFile.Text = cf.FileName;
-                txtFilePc.Text = $"{((double)cf.FilePortion / (double)cf.FileSize):0.0%}";
-                txtInFolder.Text = $"{cf.FilesCopied} of {cf.FilesTotal}";
-              }
-              else {
-                txtCurrentFile.Text = "";
-                txtFilePc.Text = "";
-                txtInFolder.Text = "";
-              }
-              try {
-                ts = RunTimer.Elapsed;
-                string s1 = $"{ts:hh\\:mm\\:ss\\.f}";
-                txtTotalTime.Text = $"{ts:hh\\:mm\\:ss\\.f}";
-                if (tf.FolderCount != 0) {
-                  var remTime = ts.TotalMilliseconds / tf.FolderCount * tf.TotalFolders - ts.TotalMilliseconds;
-                  var ts1 = TimeSpan.FromMilliseconds(remTime);
-                  txtTimeLeft.Text = $"{ts1:hh\\:mm\\:ss\\.f}";
-                  DateTime ETA = DateTime.Now + ts1 + PauseTimer.Elapsed;
-                  txtETA.Text = $"{ETA:HH:mm:ss}";
-                }
-              }
-              catch (Exception e1) {
-                var v1 = e1;
-                throw;
-              }
-            }
-          }));
-        }
-        RunTimer.Stop();
-        ts = RunTimer.Elapsed;
-        Debug.WriteLine($"End of Job {ts}");
+
+      });
+
+
+      //  Task.Run( () => {
+      //  DirectoryInfo di = new DirectoryInfo(source);
+      //    tf.TotalFolders = CountFolders(di, "*", exclude);
+      //  if (tf.TotalFolders == -1) {
+      //    backupIsRunning = false;
+      //    return;
+      //  }
+      //  var ts = RunTimer.Elapsed;
+      //  Debug.WriteLine($"End of PreScan {ts}");
+      //  prepareIsRunning = false;
+      //  Dispatcher.Invoke(() => {
+      //    FolderProgress.Maximum = tf.TotalFolders;
+      //    FolderProgress.Value = 0;
+      //  });
+      //  try {
+      //    Task t1 = copy.Start();
+      //  }
+      //  catch (Exception e1) {
+      //    var v1 = e1;
+      //    throw;
+      //  }
+      //});
+    }
+
+    private async Task PrepareForCopy() {
+      DirectoryInfo di = new DirectoryInfo(source);
+      tf.TotalFolders = CountFolders(di, "*", exclude);
+      if (tf.TotalFolders == -1) {
+        backupIsRunning = false;
+        return;
+      }
+      var ts = RunTimer.Elapsed;
+      Debug.WriteLine($"End of PreScan {ts}");
+      prepareIsRunning = false;
+      Dispatcher.Invoke(() => {
+        FolderProgress.Maximum = tf.TotalFolders;
+        FolderProgress.Value = 0;
       });
     }
 
-    private void StopCurrentBackup() {
-      throw new NotImplementedException();
+    private async Task AnimateAsync() {
+      if (!prepareIsRunning) {
+      }
+      while (backupIsRunning) {
+        await Task.Delay(200);
+        var ts = RunTimer.Elapsed;
+        if (prepareIsRunning) {
+          await Dispatcher.BeginInvoke((Action)(() => {
+            txtTotalTime.Text = $"{ts:hh\\:mm\\:ss\\.f}";
+            if (FolderProgress.Value > 80) {
+              FolderProgress.Value = 20;
+            }
+            else {
+              FolderProgress.Value += 4; ;
+            }
+            ProgressLabel.Text = $"Preparing to copy {tf.TotalFolders} folders";
+          }));
+          continue;
+        }
+        await Dispatcher.BeginInvoke((Action)(() => {
+          txtMBytes.Text = $"{(tf.BytesCopied / 1024 / 1024):#,##0}";
+          txtMBytesSkipped.Text = $"{(tf.BytesSkipped / 1024 / 1024):#,##0}";
+          txtFiles.Text = $"{(tf.FilesCopied):#,##0}";
+          txtFilesSkipped.Text = $"{(tf.FilesSkipped):#,##0}";
+          txtFolders.Text = $"{(tf.FolderCount):#,##0}";
+          FolderProgress.Value = tf.FolderCount;
+          ProgressLabel.Text = $"Folder {tf.FolderCount} of {tf.TotalFolders}";
+          if (cf != null && tf.FolderCount != 0) {
+            CurrentFolder.Text = cf.Name;
+            taskBarItemInfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.Normal;
+            taskBarItemInfo.ProgressValue = (double)tf.FolderCount / (double)tf.TotalFolders;
+            if (cf.FileSize > 100 * 1024) {
+              txtCurrentFile.Text = cf.FileName;
+              txtFilePc.Text = $"{((double)cf.FilePortion / (double)cf.FileSize):0.0%}";
+              txtInFolder.Text = $"{cf.FilesCopied} of {cf.FilesTotal}";
+            }
+            else {
+              txtCurrentFile.Text = "";
+              txtFilePc.Text = "";
+              txtInFolder.Text = "";
+            }
+            try {
+              string s1 = $"{ts:hh\\:mm\\:ss\\.f}";
+              txtTotalTime.Text = $"{ts:hh\\:mm\\:ss\\.f}";
+              if (tf.FolderCount != 0) {
+                var remTime = ts.TotalMilliseconds / tf.FolderCount * tf.TotalFolders - ts.TotalMilliseconds;
+                var ts1 = TimeSpan.FromMilliseconds(remTime);
+                txtTimeLeft.Text = $"{ts1:hh\\:mm\\:ss\\.f}";
+                DateTime ETA = DateTime.Now + ts1 + PauseTimer.Elapsed;
+                txtETA.Text = $"{ETA:HH:mm:ss}";
+              }
+            }
+            catch (Exception e1) {
+              var v1 = e1;
+              throw;
+            }
+          }
+        }));
+      }
     }
 
 

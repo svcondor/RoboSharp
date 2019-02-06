@@ -6,18 +6,11 @@
         xmlns:local="clr-namespace:RoboSharp.BackupApp"
         xmlns:diag="clr-namespace:System.Diagnostics;assembly=WindowsBase"
         mc:Ignorable="d"
-        ContentRendered="Window_ContentRendered"
         Title="Backup App" Height="650" Width="725" ResizeMode="NoResize">
+
   <Window.Resources>
-    <!--<Style TargetType="Label">
-      <Setter Property="Margin"
-              Value="5" />
-      <Setter Property="HorizontalContentAlignment"
-              Value="Right" />
-      <Setter Property="Height"
-              Value="23" />
-    </Style>-->
   </Window.Resources>
+  
   <Window.TaskbarItemInfo>
     <TaskbarItemInfo x:Name="taskBarItemInfo"/>
   </Window.TaskbarItemInfo>
@@ -78,6 +71,8 @@
                   <Label Content="Folders:" />
                   <Label Content="Files:" />
                   <Label Content="MBytes:" />
+                  <Label Content="Files Skipped:" />
+                  <Label Content="MBytes Skipped:" />
                   <Label Content="Errors:" />
                   <Label Content="Time Left :" />
                   <Label Content="Total Time :" />
@@ -98,10 +93,12 @@
                       <Setter Property="HorizontalAlignment" Value="Left" />
                     </Style>
                   </StackPanel.Resources>
-                  <TextBox x:Name="txtFolderCount"/>
-                  <TextBox x:Name="txtFileCount" />
-                  <TextBox x:Name="txtMByteCount" />
-                  <TextBox x:Name="txtErrorCount" />
+                  <TextBox x:Name="txtFolders"/>
+                  <TextBox x:Name="txtFiles" />
+                  <TextBox x:Name="txtMBytes" />
+                  <TextBox x:Name="txtFilesSkipped" />
+                  <TextBox x:Name="txtMBytesSkipped" />
+                  <TextBox x:Name="txtErrors" />
                   <TextBox x:Name="txtTimeLeft" />
                   <TextBox x:Name="txtTotalTime" />
                   <TextBox x:Name="txtETA" />
@@ -367,14 +364,14 @@
       <Button Name="BackupButton" Content="Backup"  Margin="5"  Width="75" Click="BackupButton_Click"/>
       <Grid>
         <ProgressBar Minimum="0" Maximum="0" Name="FolderProgress" 
-       Height="20" Margin="5"  Value="0"/>
-        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center">
-          <TextBlock.Text>
+       Height="20" Margin="5"  Value="0"  Foreground="#5BD15B"/>
+        <TextBlock Name="ProgressLabel" HorizontalAlignment="Center" VerticalAlignment="Center">
+          <!--<TextBlock.Text>
             <MultiBinding StringFormat="{}Folder {0} of {1}">
               <Binding Path="Value" ElementName="FolderProgress" />
               <Binding Path="Maximum" ElementName="FolderProgress" />
             </MultiBinding>
-          </TextBlock.Text>
+          </TextBlock.Text>-->
         </TextBlock>
       </Grid>
     </DockPanel>
