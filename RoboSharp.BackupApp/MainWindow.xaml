@@ -77,6 +77,7 @@
                   <Label Content="Time Left :" />
                   <Label Content="Total Time :" />
                   <Label Content="ETA :" />
+                  <Label Content="MBytes/Sec:" />
                   <!--<Label Content="Total Folders :" />
                   <Label Content="File PC :" />
                   <Label Content="Total Bytes :" />-->
@@ -89,7 +90,7 @@
                       <Setter Property="Margin" Value="5" />
                       <Setter Property="Height" Value="23" />
                       <Setter Property="HorizontalContentAlignment" Value="Right" />
-                      <Setter Property="Width" Value="115" />
+                      <Setter Property="Width" Value="80" />
                       <Setter Property="HorizontalAlignment" Value="Left" />
                     </Style>
                   </StackPanel.Resources>
@@ -102,6 +103,8 @@
                   <TextBox x:Name="txtTimeLeft" />
                   <TextBox x:Name="txtTotalTime" />
                   <TextBox x:Name="txtETA" />
+                  <TextBox x:Name="txtMBytesSec" />
+
                   <!--<TextBox x:Name="txtTotalFolders" />
                   <TextBox x:Name="txtFilePc1" />
                   <TextBox x:Name="txtTotalBytes" />-->
@@ -110,8 +113,8 @@
             </DockPanel>
             <DockPanel>
               <StackPanel Margin="5,0">
-                <TextBlock Text="Final Metrics"></TextBlock>
-                <DataGrid Name="MetricsGrid" ></DataGrid>
+                <TextBlock Text="Robocopy Totals"></TextBlock>
+                <DataGrid Name="MetricsGrid" CanUserAddRows="False" IsReadOnly="True" ></DataGrid>
               </StackPanel>
 
             </DockPanel>
@@ -335,7 +338,7 @@
         </Grid>
       </TabItem>
 
-      <TabItem Header="Progress" Name="ProgressTab">
+      <!--<TabItem Header="Progress" Name="ProgressTab">
         <Grid Name="ProgressGrid" IsEnabled="false">
           <TextBlock HorizontalAlignment="Left" Margin="40,27,0,0" TextWrapping="Wrap" Text="Current Operation" VerticalAlignment="Top" FontWeight="Bold"/>
           <TextBlock Name="CurrentOperation" HorizontalAlignment="Left" Margin="158,27,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#FF000099"/>
@@ -348,7 +351,7 @@
           <TextBlock Name="CurrentSize" HorizontalAlignment="Left" Margin="158,60,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#FF444444"/>
           <TextBlock Name="FileProgressPercent" FontWeight="Bold" TextAlignment="Right" HorizontalAlignment="Left" Margin="615,218,0,0" TextWrapping="Wrap" VerticalAlignment="Top" RenderTransformOrigin="1.76,-0.062"/>
         </Grid>
-      </TabItem>
+      </TabItem>-->
 
       <TabItem Header="Errors" Name="ErrorsTab">
         <DataGrid Name="ErrorGrid"></DataGrid>

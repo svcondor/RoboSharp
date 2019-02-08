@@ -13,7 +13,8 @@ namespace RoboSharp.BackupApp {
     public long BytesCopied { get; set; }
     public string FileName { get => _fileName ?? ""; set => _fileName = value; } // Current file name
     public long FileSize { get; set; } // Current file Size
-    public long FilePortion { get; set; } // Current file Size
+    public long FilePortion { get; set; } // Current file Portion
+    public double FilePC { get; set; } // Current file PC
     public bool ShowFile { get; set; } // File is to be coppied 
 
     // used in tf BytesCopied FilesCopied FilesSkipped BytesSkipped
@@ -27,7 +28,7 @@ namespace RoboSharp.BackupApp {
     public long ExtraByteCount { get; set; }
     public long FolderCount { get; set; }
     public long TotalFolders { get; set; }
-    public long ShowFolders { get; set; }
+    //public long ShowFolders { get; set; }
     public long ErrorCount { get; set; }
     //public long  { get; set; }
 }

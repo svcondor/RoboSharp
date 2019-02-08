@@ -28,7 +28,7 @@ namespace RoboSharp.BackupApp {
     public ObservableCollection<FileError> Errors = new ObservableCollection<FileError>();
     string SourceLower;
     string DestinationLower;
-    List<string> Folders;
+    //List<string> Folders;
     //Regex regex = new Regex(@"[ ]{2,}", RegexOptions.None);
     bool totaling = false;
     bool backupIsRunning = false;
@@ -38,13 +38,10 @@ namespace RoboSharp.BackupApp {
     Stopwatch PauseTimer = new Stopwatch();
     string source;
     string exclude;
-    Task task1;
-    Task task2;
     public MainWindow() {
       InitializeComponent();
       this.Closing += MainWindow_Closing;
       this.ContentRendered += Window_ContentRendered;
-      //this.SourceBrowseButton.Click += SourceBrowseButton_Click;
       ErrorGrid.ItemsSource = Errors;
       RoboSharp.Debugger.Instance.DebugMessageEvent += DebugMessage;
     }
@@ -67,7 +64,8 @@ namespace RoboSharp.BackupApp {
       //OptionsGrid.IsEnabled = false;
       //ProgressTab.IsSelected = true;
       //ProgressGrid.IsEnabled = true;
-      CurrentFolder.Text = "Running Preliminary Scan...";
+      //CurrentFolder.Text = "Running Preliminary Scan...";
+      CurrentFolder.Text = "";
       txtFiles.Text = "";
       txtMBytes.Text = "";
       txtFilesSkipped.Text = "";
@@ -80,7 +78,9 @@ namespace RoboSharp.BackupApp {
       txtFilePc.Text = "";
       txtTotalTime.Text = "";
       copy = BuildRobocopyParameters();
+      //Debug.WriteLine("After BuildRobocopyParameters()");
       Parameters.Text = "ROBOCOPY " + copy.CommandOptions;
+      //Debug.WriteLine("After copy.CommandOptions");
       SourceLower = Source.Text.ToLower();
       DestinationLower = Destination.Text.ToLower();
       cf = new CurrentFolder { Name = Source.Text };
@@ -90,8 +90,10 @@ namespace RoboSharp.BackupApp {
 
     RoboCommand BuildRobocopyParameters() {
       //Debugger.Instance.DebugMessageEvent += DebugMessage;
-      //Debug.WriteLine($"{DateTime.Now} before new RoboCommand()");
+      //Debug.WriteLine("b4 new RoboCommand()");
       copy = new RoboCommand();
+      //Debug.WriteLine("after new RoboCommand()");
+
       copy.OnFileProcessed += copy_OnFileProcessed;
       copy.OnCommandError += copy_OnCommandError;
       copy.OnError += copy_OnError;
@@ -157,7 +159,7 @@ namespace RoboSharp.BackupApp {
       //Debug.WriteLine($"{DateTime.Now} before copy.Start");
       //copy.Start();
       //Debug.WriteLine($"{DateTime.Now} After copy.Start");
-
+      //var v6 = copy.CommandOptions;
       return copy;
     }
 
@@ -174,8 +176,12 @@ namespace RoboSharp.BackupApp {
     }
 
     void copy_OnCopyProgressChanged(object sender, CopyProgressEventArgs e) {
+      //if (e.CurrentFileProgress == 100) {
+      //  Debug.WriteLine($"Progress {e.CurrentFileProgress}");
+      //}
       try {
         if (cf.ShowFile) {
+          cf.FilePC = e.CurrentFileProgress;
           long newBytes = 0;
           if (e.CurrentFileProgress == 100) {
             newBytes = cf.FileSize - cf.FilePortion;
@@ -192,7 +198,6 @@ namespace RoboSharp.BackupApp {
             cf.FilePortion = 0;
           }
         }
-        //Debug.WriteLine($"Progress\t{e.CurrentFileProgress}");
       }
       catch (Exception e1) {
         var v1 = e1;
@@ -216,66 +221,71 @@ namespace RoboSharp.BackupApp {
 
     void copy_OnFileProcessed(object sender, FileProcessedEventArgs e) {
       try {
-        var v1 = e.ProcessedFile;
-        //Debug.WriteLine($"C-{v1.FileClass} T-{v1.FileClassType} N-{v1.Name} S-{v1.Size}");
+        var file = e.ProcessedFile;
+        //Debug.WriteLine($"C-{file.FileClass} T-{file.FileClassType} N-{file.Name} S-{file.Size}");
 
-        if (v1.FileClassType == FileClassType.NewDir) {
-          if (v1.FileClass == "New Dir") {
-            if (v1.Name.ToLower().StartsWith(DestinationLower)) {
+        if (file.FileClassType == FileClassType.NewDir) {
+          if (file.FileClass == "New Dir") {
+            if (file.Name.ToLower().StartsWith(DestinationLower)) {
             }
-            else if (v1.Name.ToLower().StartsWith(SourceLower)) {
+            else if (file.Name.ToLower().StartsWith(SourceLower)) {
               ++tf.FolderCount;
               cf = new CurrentFolder {
-                Name = v1.Name,
-                FilesTotal = v1.Size,
+                Name = file.Name,
+                FilesTotal = file.Size,
                 FileName = "",
               };
             }
             else {
+              throw new Exception($"Folder not in source or destination \"{file.Name}\"");
             }
           }
           else {
+            throw new Exception($"Folder FileClass not \"New Dir\" \"{file.FileClass}\"");
           }
         }
-        else if (v1.FileClassType == FileClassType.File) {
+        else if (file.FileClassType == FileClassType.File) {
           if (cf == null) {
+            throw new Exception("cf == null");
           }
-          if (v1.FileClass == "New File"
-            || v1.FileClass == "Newer"
-            || v1.FileClass == "modified") {
-            cf.FileName = v1.Name;
-            cf.FileSize = v1.Size;
+          if (file.FileClass == "New File"
+            || file.FileClass == "Newer"
+            || file.FileClass == "modified") {
+            cf.FileName = file.Name;
+            cf.FileSize = file.Size;
             ++cf.FilesCopied;
             ++tf.FilesCopied;
             cf.ShowFile = true;
           }
-          else if (v1.FileClass == "same"
-            || v1.FileClass == "Older") {
-            if (v1.FileClass == "Older") {
+          else if (file.FileClass == "same"
+            || file.FileClass == "Older") {
+            if (file.FileClass == "Older") {
             }
-            cf.FileSize = v1.Size;
+            cf.FileSize = file.Size;
             ++cf.FilesSkipped;
             ++tf.FilesSkipped;
-            cf.BytesSkipped += v1.Size;
-            tf.BytesSkipped += v1.Size;
+            cf.BytesSkipped += file.Size;
+            tf.BytesSkipped += file.Size;
           }
-          else if (v1.FileClass == "*EXTRA File") {
+          else if (file.FileClass == "*EXTRA File") {
             ++tf.ExtraFileCount;
-            tf.ExtraByteCount += v1.Size;
+            tf.ExtraByteCount += file.Size;
           }
           else {
+            throw new Exception($"Unhandled FileClass \"{file.FileClass}\"");
           }
         }
-        else if (v1.FileClassType == FileClassType.SystemMessage) {
-          Debug.WriteLine($"SYSTEM\t{v1.Name}");
+        else if (file.FileClassType == FileClassType.SystemMessage) {
+          Debug.WriteLine($"SYSTEM\t{file.Name}");
 
-          if (v1.Name.StartsWith("Total")) {
+          if (file.Name.StartsWith("Total")) {
             totaling = true;
             metrics = new List<Metric>();
           }
           else if (totaling) {
-            var splits = v1.Name.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-            if (splits[1] == ":") {
+            var splits = file.Name.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] types = { "Dirs", "Files", "Bytes" };
+            if (splits[1] == ":" && types.Contains(splits[0])) {
               var m1 = new Metric { Type = splits[0] };
               if (splits.Length > 2) m1.Total = splits[2];
               if (splits.Length > 3) m1.Copied = splits[3];
@@ -283,17 +293,16 @@ namespace RoboSharp.BackupApp {
               if (splits.Length > 5) m1.Mismatch = splits[5];
               if (splits.Length > 6) m1.FAILED = splits[6];
               if (splits.Length > 7) m1.Extras = splits[7];
-              if (splits.Length > 8) {
-              }
               metrics.Add(m1);
             }
           }
         }
         else {
+          throw new Exception($"Unhandled FileClassType \"{file.FileClassType}\"");
         }
       }
-      catch (Exception) {
-        throw;
+      catch (Exception ex) {
+        throw ex;
       }
     }
 
@@ -318,11 +327,9 @@ namespace RoboSharp.BackupApp {
         CurrentFolder.Text = cf.Name;
       }));
 
-
-
-
       Debug.WriteLine($"EVENT\tcopy_OnCommandCompleted");
-      //showProgress("End Of Job", copy.counters);
+      var ts = RunTimer.Elapsed;
+      Debug.WriteLine($"End of Job {ts}");
       //Dispatcher.BeginInvoke((Action)(() => {
       //  //OptionsGrid.IsEnabled = true;
       //  //ProgressGrid.IsEnabled = false;
@@ -391,6 +398,9 @@ namespace RoboSharp.BackupApp {
         }
         backupIsRunning = false;
         prepareIsRunning = false;
+        RunTimer.Stop();
+        var ts = RunTimer.Elapsed;
+        Debug.WriteLine($"Job cancelled {ts}");
         MessageBoxResult result = MessageBox.Show("Backup was cancelled",
           "Backup", MessageBoxButton.OK);
         CancelButton.IsEnabled = false;
@@ -400,8 +410,10 @@ namespace RoboSharp.BackupApp {
     }
 
     void Window_ContentRendered(object sender, EventArgs e) {
-      Source.Text = @"G:\Public\Gitrepos\0misc";
-      Destination.Text = @"F:\Gitrepos2\0misc";
+      //Source.Text = @"G:\Public\Gitrepos\0misc";
+      //Destination.Text = @"F:\Gitrepos2\0misc";
+      Source.Text = @"G:\Public\Source";
+      Destination.Text = @"F:\Source";
       CopySubdirectoriesIncludingEmpty.IsChecked = true;
       ExcludeDirectories.Text = "node_modules";
       VerboseOutput.IsChecked = true;
@@ -414,8 +426,8 @@ namespace RoboSharp.BackupApp {
     }
 
     void ScanThenCopy() {
-      Folders = new List<string>();
-      CurrentFolder.Text = "Counting Folders";
+      //Folders = new List<string>();
+      //CurrentFolder.Text = "Counting Folders";
 
       RunTimer.Reset();
       PauseTimer.Stop();
@@ -433,9 +445,9 @@ namespace RoboSharp.BackupApp {
       FolderProgress.Maximum = 100;
       FolderProgress.Value = 0;
 
-      task1 = AnimateAsync();
+      Task task1 = ShowProgressAsync();
 
-      Task.Run(async () => {
+      Task.Run(() => {
         DirectoryInfo di = new DirectoryInfo(source);
         tf.TotalFolders = CountFolders(di, "*", exclude);
         if (tf.TotalFolders == -1) {
@@ -450,20 +462,18 @@ namespace RoboSharp.BackupApp {
           FolderProgress.Value = 0;
         });
         try {
-          Task t1 = copy.Start();
+          //Debug.WriteLine("b4 copy.Start");
+          copy.Start();
+          //Debug.WriteLine("After copy.Start");
         }
         catch (Exception e1) {
           var v1 = e1;
           throw;
         }
-        //await AnimateAsync();
-        RunTimer.Stop();
-        ts = RunTimer.Elapsed;
-        Debug.WriteLine($"End of Job {ts}");
       });
     }
 
-    private async Task AnimateAsync() {
+    private async Task ShowProgressAsync() {
       if (!prepareIsRunning) {
       }
       while (backupIsRunning) {
@@ -480,62 +490,60 @@ namespace RoboSharp.BackupApp {
             }
             ProgressLabel.Text = $"Preparing to copy {tf.TotalFolders} folders";
           }));
-          continue;
         }
-        await Dispatcher.BeginInvoke((Action)(() => {
-          txtMBytes.Text = $"{(tf.BytesCopied / 1024 / 1024):#,##0}";
-          txtMBytesSkipped.Text = $"{(tf.BytesSkipped / 1024 / 1024):#,##0}";
-          txtFiles.Text = $"{(tf.FilesCopied):#,##0}";
-          txtFilesSkipped.Text = $"{(tf.FilesSkipped):#,##0}";
-          txtFolders.Text = $"{(tf.FolderCount):#,##0}";
-          FolderProgress.Value = tf.FolderCount;
-          ProgressLabel.Text = $"Folder {tf.FolderCount} of {tf.TotalFolders}";
-          if (cf != null && tf.FolderCount != 0) {
-            CurrentFolder.Text = cf.Name;
-            taskBarItemInfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.Normal;
-            taskBarItemInfo.ProgressValue = (double)tf.FolderCount / (double)tf.TotalFolders;
-            if (cf.FileSize > 1024 * 1024) {
-              txtCurrentFile.Text = cf.FileName;
-              txtFilePc.Text = $"{((double)cf.FilePortion / (double)cf.FileSize):0.0%}";
-              txtInFolder.Text = $"{cf.FilesCopied} of {cf.FilesTotal}";
-            }
-            else {
-              txtCurrentFile.Text = "";
-              txtFilePc.Text = "";
-              txtInFolder.Text = "";
-            }
-            try {
-              string s1 = $"{ts:hh\\:mm\\:ss\\.f}";
-              txtTotalTime.Text = $"{ts:hh\\:mm\\:ss\\.f}";
-              if (tf.FolderCount != 0) {
-                var remTime = ts.TotalMilliseconds / tf.FolderCount * tf.TotalFolders - ts.TotalMilliseconds;
-                var ts1 = TimeSpan.FromMilliseconds(remTime);
-                txtTimeLeft.Text = $"{ts1:hh\\:mm\\:ss\\.f}";
-                DateTime ETA = DateTime.Now + ts1 + PauseTimer.Elapsed;
-                txtETA.Text = $"{ETA:HH:mm:ss}";
+        else {
+          await Dispatcher.BeginInvoke((Action)(() => {
+            txtMBytes.Text = $"{(tf.BytesCopied / 1024 / 1024):#,##0}";
+            txtMBytesSkipped.Text = $"{(tf.BytesSkipped / 1024 / 1024):#,##0}";
+            txtFiles.Text = $"{(tf.FilesCopied):#,##0}";
+            txtFilesSkipped.Text = $"{(tf.FilesSkipped):#,##0}";
+            txtFolders.Text = $"{(tf.FolderCount):#,##0}";
+            FolderProgress.Value = tf.FolderCount;
+            ProgressLabel.Text = $"Folder {tf.FolderCount} of {tf.TotalFolders}";
+            if (cf != null && tf.FolderCount != 0) {
+              CurrentFolder.Text = cf.Name;
+              taskBarItemInfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.Normal;
+              taskBarItemInfo.ProgressValue = (double)tf.FolderCount / (double)tf.TotalFolders;
+              if (cf.FileSize > 100 * 1024 * 1024) {
+                txtCurrentFile.Text = cf.FileName;
+                txtFilePc.Text = $"{((double)cf.FilePortion / (double)cf.FileSize):0.0%}";
+                txtInFolder.Text = $"{cf.FilesCopied} of {cf.FilesTotal}";
+              }
+              else {
+                txtCurrentFile.Text = "";
+                txtFilePc.Text = "";
+                txtInFolder.Text = "";
+              }
+              try {
+                string s1 = $"{ts:hh\\:mm\\:ss\\.f}";
+                txtTotalTime.Text = $"{ts:hh\\:mm\\:ss\\.f}";
+                if (tf.FolderCount != 0) {
+                  var remTime = ts.TotalMilliseconds / tf.FolderCount * tf.TotalFolders - ts.TotalMilliseconds;
+                  var ts1 = TimeSpan.FromMilliseconds(remTime);
+                  txtTimeLeft.Text = $"{ts1:hh\\:mm\\:ss\\.f}";
+                  DateTime ETA = DateTime.Now + ts1 + PauseTimer.Elapsed;
+                  txtETA.Text = $"{ETA:HH:mm:ss}";
+                  //TODO Track last 10 or 100 iterations
+                  //Only include if bytes were xfered
+                  double mbs = tf.BytesCopied / 1024 / 1024 / ts.TotalSeconds;
+                  txtMBytesSec.Text = $"{mbs:#,##0.00}";
+                }
+              }
+              catch (Exception e1) {
+                throw e1;
               }
             }
-            catch (Exception e1) {
-              var v1 = e1;
-              throw;
-            }
-          }
-        }));
+          }));
+        }
       }
     }
-
 
     long CountFolders(DirectoryInfo dir, string searchPattern, string exclude) {
       if (backupIsRunning == false) {
         return -1;
       }
       ++tf.TotalFolders;
-      if (tf.TotalFolders >= tf.ShowFolders + 100) {
-        tf.ShowFolders = tf.TotalFolders;
-        Dispatcher.Invoke(() => {
-          CurrentFolder.Text = $"Counting Folders {tf.ShowFolders}";
-        });
-      }
+      //TODO Count files if folders less than xx or limit folder depth
       //var files = dir.CountFileSystemObjects(DirectoryEnumerationOptions.Files);
       //TotalFiles += files;
       //Folders.Add(dir.FullName);
