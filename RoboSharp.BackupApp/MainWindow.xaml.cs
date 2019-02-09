@@ -22,7 +22,7 @@ using System.Linq;
 namespace RoboSharp.BackupApp {
 
   public partial class MainWindow : Window {
-    CurrentFolder cf;  // Current folder info record
+    CurrentFolder cf = new CurrentFolder();  // Current folder info record
     Totals tf;  //  info record to total all folders
     RoboCommand copy;
     public ObservableCollection<FileError> Errors = new ObservableCollection<FileError>();
@@ -83,7 +83,10 @@ namespace RoboSharp.BackupApp {
       //Debug.WriteLine("After copy.CommandOptions");
       SourceLower = Source.Text.ToLower();
       DestinationLower = Destination.Text.ToLower();
-      cf = new CurrentFolder { Name = Source.Text };
+      cf.FolderName = "";
+      cf.FilesTotal = 0;
+      cf.FilesCopied = 0;
+      cf.ClearFileData();
       tf = new Totals();
       ScanThenCopy();
     }
@@ -192,7 +195,6 @@ namespace RoboSharp.BackupApp {
             * e.CurrentFileProgress / 100.0) - cf.FilePortion;
           }
           cf.FilePortion += newBytes;
-          cf.BytesCopied += newBytes;
           tf.BytesCopied += newBytes;
           if (cf.ShowFile == false) {
             cf.FilePortion = 0;
@@ -223,6 +225,13 @@ namespace RoboSharp.BackupApp {
       try {
         var file = e.ProcessedFile;
         //Debug.WriteLine($"C-{file.FileClass} T-{file.FileClassType} N-{file.Name} S-{file.Size}");
+        if (cf.FileName != "") {
+          if (cf.FilePC != 100.0) {
+            tf.BytesCopied += (cf.FileSize - cf.FilePortion);
+            cf.FilePC = 100;
+          }
+          cf.FileName = "";
+        }
 
         if (file.FileClassType == FileClassType.NewDir) {
           if (file.FileClass == "New Dir") {
@@ -230,11 +239,10 @@ namespace RoboSharp.BackupApp {
             }
             else if (file.Name.ToLower().StartsWith(SourceLower)) {
               ++tf.FolderCount;
-              cf = new CurrentFolder {
-                Name = file.Name,
-                FilesTotal = file.Size,
-                FileName = "",
-              };
+              cf.FolderName = file.Name;
+              cf.FilesTotal = file.Size;
+              cf.FilesCopied = 0;
+              cf.ClearFileData();
             }
             else {
               throw new Exception($"Folder not in source or destination \"{file.Name}\"");
@@ -253,6 +261,7 @@ namespace RoboSharp.BackupApp {
             || file.FileClass == "modified") {
             cf.FileName = file.Name;
             cf.FileSize = file.Size;
+            cf.FilePortion = 0;
             ++cf.FilesCopied;
             ++tf.FilesCopied;
             cf.ShowFile = true;
@@ -261,15 +270,18 @@ namespace RoboSharp.BackupApp {
             || file.FileClass == "Older") {
             if (file.FileClass == "Older") {
             }
+            cf.FileName = "";
             cf.FileSize = file.Size;
-            ++cf.FilesSkipped;
+            ++cf.FilesCopied;
             ++tf.FilesSkipped;
-            cf.BytesSkipped += file.Size;
             tf.BytesSkipped += file.Size;
+            cf.ShowFile = false;
           }
           else if (file.FileClass == "*EXTRA File") {
+            cf.FileName = "";
             ++tf.ExtraFileCount;
             tf.ExtraByteCount += file.Size;
+            cf.ShowFile = false;
           }
           else {
             throw new Exception($"Unhandled FileClass \"{file.FileClass}\"");
@@ -324,7 +336,7 @@ namespace RoboSharp.BackupApp {
         txtFiles.Text = $"{tf.FilesCopied:#,##0}";
         txtFilesSkipped.Text = $"{tf.FilesSkipped:#,##0}";
         txtFolders.Text = $"{tf.FolderCount:#,##0}";
-        CurrentFolder.Text = cf.Name;
+        CurrentFolder.Text = cf.FolderName;
       }));
 
       Debug.WriteLine($"EVENT\tcopy_OnCommandCompleted");
@@ -410,10 +422,10 @@ namespace RoboSharp.BackupApp {
     }
 
     void Window_ContentRendered(object sender, EventArgs e) {
-      //Source.Text = @"G:\Public\Gitrepos\0misc";
-      //Destination.Text = @"F:\Gitrepos2\0misc";
-      Source.Text = @"G:\Public\Source";
-      Destination.Text = @"F:\Source";
+      Source.Text = @"G:\Public\Gitrepos\0misc";
+      Destination.Text = @"F:\Gitrepos2\0misc";
+      //Source.Text = @"G:\Public\Source";
+      //Destination.Text = @"F:\Source";
       CopySubdirectoriesIncludingEmpty.IsChecked = true;
       ExcludeDirectories.Text = "node_modules";
       VerboseOutput.IsChecked = true;
@@ -493,15 +505,18 @@ namespace RoboSharp.BackupApp {
         }
         else {
           await Dispatcher.BeginInvoke((Action)(() => {
-            txtMBytes.Text = $"{(tf.BytesCopied / 1024 / 1024):#,##0}";
-            txtMBytesSkipped.Text = $"{(tf.BytesSkipped / 1024 / 1024):#,##0}";
-            txtFiles.Text = $"{(tf.FilesCopied):#,##0}";
-            txtFilesSkipped.Text = $"{(tf.FilesSkipped):#,##0}";
-            txtFolders.Text = $"{(tf.FolderCount):#,##0}";
-            FolderProgress.Value = tf.FolderCount;
-            ProgressLabel.Text = $"Folder {tf.FolderCount} of {tf.TotalFolders}";
+
             if (cf != null && tf.FolderCount != 0) {
-              CurrentFolder.Text = cf.Name;
+              if (cf.ShowFile) {
+              }
+              txtMBytes.Text = $"{Math.Round((double)tf.BytesCopied / 1024.0 / 1024.0):#,##0}";
+              txtMBytesSkipped.Text = $"{Math.Round((double)tf.BytesSkipped / 1024.0 / 1024.0):#,##0}";
+              txtFiles.Text = $"{(tf.FilesCopied):#,##0}";
+              txtFilesSkipped.Text = $"{(tf.FilesSkipped):#,##0}";
+              txtFolders.Text = $"{(tf.FolderCount):#,##0}";
+              FolderProgress.Value = tf.FolderCount;
+              ProgressLabel.Text = $"Folder {tf.FolderCount} of {tf.TotalFolders}";
+              CurrentFolder.Text = cf.FolderName;
               taskBarItemInfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.Normal;
               taskBarItemInfo.ProgressValue = (double)tf.FolderCount / (double)tf.TotalFolders;
               if (cf.FileSize > 100 * 1024 * 1024) {
@@ -525,8 +540,8 @@ namespace RoboSharp.BackupApp {
                   txtETA.Text = $"{ETA:HH:mm:ss}";
                   //TODO Track last 10 or 100 iterations
                   //Only include if bytes were xfered
-                  double mbs = tf.BytesCopied / 1024 / 1024 / ts.TotalSeconds;
-                  txtMBytesSec.Text = $"{mbs:#,##0.00}";
+                  double mbs = (double)tf.BytesCopied / 1024.0 / 1024.0 / ts.TotalSeconds;
+                  txtMBytesSec.Text = $"{mbs:#,##0.0}";
                 }
               }
               catch (Exception e1) {

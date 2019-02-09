@@ -5,19 +5,27 @@ namespace RoboSharp.BackupApp {
     private string _name;
     private string _fileName;
 
-    public string Name { get => _name ?? ""; set => _name = value; }  // Name of folder
+    public string FolderName { get => _name ?? ""; set => _name = value; }  // Name of folder
     public long FilesTotal { get; set; } // Number of files in folder record
-    public long FilesSkipped { get; set; } // Current files count
-    public long FilesCopied { get; set; } // Current files count
-    public long BytesSkipped { get; set; }
-    public long BytesCopied { get; set; }
+    //public long FilesSkipped { get; set; } // Current files count
+    public long FilesCopied { get; set; } // Current files count in folder
+    //public long BytesSkipped { get; set; }
+    //public long BytesCopied { get; set; }
     public string FileName { get => _fileName ?? ""; set => _fileName = value; } // Current file name
     public long FileSize { get; set; } // Current file Size
     public long FilePortion { get; set; } // Current file Portion
     public double FilePC { get; set; } // Current file PC
     public bool ShowFile { get; set; } // File is to be coppied 
 
-    // used in tf BytesCopied FilesCopied FilesSkipped BytesSkipped
+    public void ClearFileData() {
+      FileName = "";
+      FileSize = 0;
+      FilePortion = 0;
+      FilePC = 0;
+      ShowFile = false;
+    }
+
+
   }
   public class Totals {
     public long FilesSkipped { get; set; } // Current files count
