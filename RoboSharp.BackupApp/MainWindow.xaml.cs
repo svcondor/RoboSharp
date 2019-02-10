@@ -180,31 +180,9 @@ namespace RoboSharp.BackupApp {
 
     void copy_OnCopyProgressChanged(object sender, CopyProgressEventArgs e) {
       //if (e.CurrentFileProgress == 100) {
-      //  Debug.WriteLine($"Progress {e.CurrentFileProgress}");
+      //Debug.WriteLine($"Progress {e.CurrentFileProgress}");
       //}
-      try {
-        if (cf.ShowFile) {
-          cf.FilePC = e.CurrentFileProgress;
-          long newBytes = 0;
-          if (e.CurrentFileProgress == 100) {
-            newBytes = cf.FileSize - cf.FilePortion;
-            cf.ShowFile = false;
-          }
-          else {
-            newBytes = Convert.ToInt64((double)cf.FileSize
-            * e.CurrentFileProgress / 100.0) - cf.FilePortion;
-          }
-          cf.FilePortion += newBytes;
-          tf.BytesCopied += newBytes;
-          if (cf.ShowFile == false) {
-            cf.FilePortion = 0;
-          }
-        }
-      }
-      catch (Exception e1) {
-        var v1 = e1;
-        throw;
-      }
+      cf.FilePC = e.CurrentFileProgress;
     }
 
     void copy_OnError(object sender, ErrorEventArgs e) {
@@ -226,10 +204,11 @@ namespace RoboSharp.BackupApp {
         var file = e.ProcessedFile;
         //Debug.WriteLine($"C-{file.FileClass} T-{file.FileClassType} N-{file.Name} S-{file.Size}");
         if (cf.FileName != "") {
-          if (cf.FilePC != 100.0) {
+          if (cf.FilePortion != cf.FileSize) {
             tf.BytesCopied += (cf.FileSize - cf.FilePortion);
-            cf.FilePC = 100;
+            cf.FilePortion = cf.FileSize;
           }
+          //Debug.WriteLine($"FileProcessed2-\"{cf.FileName}\" {tf.BytesCopied} {cf.FileSize} {cf.FilePortion} {cf.FilePC}");
           cf.FileName = "";
         }
 
@@ -259,11 +238,18 @@ namespace RoboSharp.BackupApp {
           if (file.FileClass == "New File"
             || file.FileClass == "Newer"
             || file.FileClass == "modified") {
-            cf.FileName = file.Name;
-            cf.FileSize = file.Size;
-            cf.FilePortion = 0;
             ++cf.FilesCopied;
             ++tf.FilesCopied;
+            cf.FileSize = file.Size;
+            if (cf.FileSize > 100 * 1024 * 1024) {
+              cf.FileName = file.Name;
+              cf.FilePortion = 0;
+              cf.FilePC = 0.0;
+            }
+            else {
+              cf.FileName = "";
+              tf.BytesCopied += file.Size;
+            }
             cf.ShowFile = true;
           }
           else if (file.FileClass == "same"
@@ -320,6 +306,9 @@ namespace RoboSharp.BackupApp {
 
     void copy_OnCommandCompleted(object sender, RoboCommandCompletedEventArgs e) {
       Debug.WriteLine("CommandCompleted");
+      if (cf.FileName != "") {
+      }
+      //Task.Run(() => ShowValues());
       Dispatcher.BeginInvoke((Action)(() => {
         backupIsRunning = false;
         RunTimer.Stop();
@@ -332,12 +321,12 @@ namespace RoboSharp.BackupApp {
         PauseButton.IsEnabled = false;
         BackupButton.IsEnabled = true;
 
-        txtMBytes.Text = $"{(tf.BytesCopied / 1024 / 1024):#,##0}";
-        txtMBytesSkipped.Text = $"{(tf.BytesSkipped / 1024 / 1024):#,##0}";
-        txtFiles.Text = $"{tf.FilesCopied:#,##0}";
-        txtFilesSkipped.Text = $"{tf.FilesSkipped:#,##0}";
-        txtFolders.Text = $"{tf.FolderCount:#,##0}";
-        CurrentFolder.Text = cf.FolderName;
+        //txtMBytes.Text = $"{(tf.BytesCopied / 1024 / 1024):#,##0}";
+        //txtMBytesSkipped.Text = $"{(tf.BytesSkipped / 1024 / 1024):#,##0}";
+        //txtFiles.Text = $"{tf.FilesCopied:#,##0}";
+        //txtFilesSkipped.Text = $"{tf.FilesSkipped:#,##0}";
+        //txtFolders.Text = $"{tf.FolderCount:#,##0}";
+        //CurrentFolder.Text = cf.FolderName;
       }));
 
       Debug.WriteLine($"EVENT\tcopy_OnCommandCompleted");
@@ -423,10 +412,10 @@ namespace RoboSharp.BackupApp {
     }
 
     void Window_ContentRendered(object sender, EventArgs e) {
-      Source.Text = @"G:\Public\Files1";
-      Destination.Text = @"F:\Gitrepos2\Files1";
-      //Source.Text = @"G:\Public\Gitrepos\0misc";
-      //Destination.Text = @"F:\Gitrepos2\0misc";
+      //Source.Text = @"G:\Public\Files1";
+      //Destination.Text = @"F:\Gitrepos2\Files1";
+      Source.Text = @"G:\Public\Gitrepos\0misc";
+      Destination.Text = @"F:\Gitrepos2\0misc";
       //Source.Text = @"G:\Public\Source";
       //Destination.Text = @"F:\Source";
       CopySubdirectoriesIncludingEmpty.IsChecked = true;
@@ -472,6 +461,7 @@ namespace RoboSharp.BackupApp {
         var ts = RunTimer.Elapsed;
         Debug.WriteLine($"End of PreScan {ts}");
         prepareIsRunning = false;
+        RunTimer.Restart();
         Dispatcher.Invoke(() => {
           FolderProgress.Maximum = tf.TotalFolders;
           FolderProgress.Value = 0;
@@ -491,7 +481,7 @@ namespace RoboSharp.BackupApp {
     private async Task ShowProgressAsync() {
       if (!prepareIsRunning) {
       }
-      while (backupIsRunning) {
+      while (backupIsRunning || cf.FileName != "") {
         await Task.Delay(200);
         var ts = RunTimer.Elapsed;
         if (prepareIsRunning) {
@@ -507,55 +497,75 @@ namespace RoboSharp.BackupApp {
           }));
         }
         else {
-          await Dispatcher.BeginInvoke((Action)(() => {
-
-            if (cf != null && tf.FolderCount != 0) {
-              if (cf.ShowFile) {
-              }
-              //txtMBytes.Text = $"{Math.Round((double)tf.BytesCopied / 1024.0 / 1024.0):#,##0}";
-              //txtMBytesSkipped.Text = $"{Math.Round((double)tf.BytesSkipped / 1024.0 / 1024.0):#,##0}";
-              txtMBytes.Text = $"{tf.BytesCopied:#,##0}";
-              txtMBytesSkipped.Text = $"{tf.BytesSkipped:#,##0}";
-              txtFiles.Text = $"{(tf.FilesCopied):#,##0}";
-              txtFilesSkipped.Text = $"{(tf.FilesSkipped):#,##0}";
-              txtFolders.Text = $"{(tf.FolderCount):#,##0}";
-              FolderProgress.Value = tf.FolderCount;
-              ProgressLabel.Text = $"Folder {tf.FolderCount} of {tf.TotalFolders}";
-              CurrentFolder.Text = cf.FolderName;
-              taskBarItemInfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.Normal;
-              taskBarItemInfo.ProgressValue = (double)tf.FolderCount / (double)tf.TotalFolders;
-              if (cf.FileSize > 100 * 1024 * 1024) {
-                txtCurrentFile.Text = cf.FileName;
-                txtFilePc.Text = $"{((double)cf.FilePortion / (double)cf.FileSize):0.0%}";
-                txtInFolder.Text = $"{cf.FilesCopied} of {cf.FilesTotal}";
-              }
-              else {
-                txtCurrentFile.Text = "";
-                txtFilePc.Text = "";
-                txtInFolder.Text = "";
-              }
-              try {
-                string s1 = $"{ts:hh\\:mm\\:ss\\.f}";
-                txtTotalTime.Text = $"{ts:hh\\:mm\\:ss\\.f}";
-                if (tf.FolderCount != 0) {
-                  var remTime = ts.TotalMilliseconds / tf.FolderCount * tf.TotalFolders - ts.TotalMilliseconds;
-                  var ts1 = TimeSpan.FromMilliseconds(remTime);
-                  txtTimeLeft.Text = $"{ts1:hh\\:mm\\:ss\\.f}";
-                  DateTime ETA = DateTime.Now + ts1 + PauseTimer.Elapsed;
-                  txtETA.Text = $"{ETA:HH:mm:ss}";
-                  //TODO Track last 10 or 100 iterations
-                  //Only include if bytes were xfered
-                  double mbs = (double)tf.BytesCopied / 1024.0 / 1024.0 / ts.TotalSeconds;
-                  txtMBytesSec.Text = $"{mbs:#,##0.0}";
-                }
-              }
-              catch (Exception e1) {
-                throw e1;
-              }
-            }
-          }));
+          await ShowValues();
         }
       }
+    }
+
+    private async Task ShowValues() {
+      var ts = RunTimer.Elapsed;
+      await Dispatcher.BeginInvoke((Action)(() => {
+        //Debug.WriteLine($"ShowValues1-\"{cf.FileName}\" {tf.BytesCopied} {cf.FileSize} {cf.FilePortion} {cf.FilePC}");
+        //if (cf != null && tf.FolderCount != 0) {
+        if (true) {
+          if (cf.FileName != "") {
+            Double pc1 = cf.FilePC;
+            tf.BytesCopied -= cf.FilePortion;
+            cf.FilePortion = Convert.ToInt64((double)cf.FileSize
+              * pc1 / 100);
+            tf.BytesCopied += cf.FilePortion;
+            txtCurrentFile.Text = cf.FileName;
+            txtFilePc.Text = $"{pc1}%";
+            txtInFolder.Text = $"File {cf.FilesCopied} of {cf.FilesTotal}";
+          }
+          else {
+            txtCurrentFile.Text = "";
+            txtFilePc.Text = "";
+            txtInFolder.Text = "";
+          }
+          //Debug.WriteLine($"ShowValues2-\"{cf.FileName}\" {tf.BytesCopied} {cf.FileSize} {cf.FilePortion} {cf.FilePC}");
+          //txtMBytes.Text = $"{Math.Round((double)tf.BytesCopied / 1024.0 / 1024.0):#,##0}";
+          //txtMBytesSkipped.Text = $"{Math.Round((double)tf.BytesSkipped / 1024.0 / 1024.0):#,##0}";
+          txtMBytes.Text = $"{tf.BytesCopied:#,##0}";
+          txtMBytesSkipped.Text = $"{tf.BytesSkipped:#,##0}";
+          txtFiles.Text = $"{(tf.FilesCopied):#,##0}";
+          txtFilesSkipped.Text = $"{(tf.FilesSkipped):#,##0}";
+          txtFolders.Text = $"{(tf.FolderCount):#,##0}";
+          FolderProgress.Value = tf.FolderCount;
+          ProgressLabel.Text = $"Folder {tf.FolderCount} of {tf.TotalFolders}";
+          CurrentFolder.Text = cf.FolderName;
+          taskBarItemInfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.Normal;
+          taskBarItemInfo.ProgressValue = (double)tf.FolderCount / (double)tf.TotalFolders;
+          //if (cf.FileSize > 100 * 1024 * 1024) {
+          //  txtCurrentFile.Text = cf.FileName;
+          //  txtFilePc.Text = $"{((double)cf.FilePortion / (double)cf.FileSize):0.0%}";
+          //  txtInFolder.Text = $"{cf.FilesCopied} of {cf.FilesTotal}";
+          //}
+          //else {
+          //  txtCurrentFile.Text = "";
+          //  txtFilePc.Text = "";
+          //  txtInFolder.Text = "";
+          //}
+          try {
+            string s1 = $"{ts:hh\\:mm\\:ss\\.f}";
+            txtTotalTime.Text = $"{ts:hh\\:mm\\:ss\\.f}";
+            if (tf.FolderCount != 0) {
+              var remTime = ts.TotalMilliseconds / tf.FolderCount * tf.TotalFolders - ts.TotalMilliseconds;
+              var ts1 = TimeSpan.FromMilliseconds(remTime);
+              txtTimeLeft.Text = $"{ts1:hh\\:mm\\:ss\\.f}";
+              DateTime ETA = DateTime.Now + ts1 + PauseTimer.Elapsed;
+              txtETA.Text = $"{ETA:HH:mm:ss}";
+              //TODO Track last 10 or 100 iterations
+              //Only include if bytes were xfered
+              double mbs = (double)tf.BytesCopied / 1024.0 / 1024.0 / ts.TotalSeconds;
+              txtMBytesSec.Text = $"{mbs:#,##0.0}";
+            }
+          }
+          catch (Exception e1) {
+            throw e1;
+          }
+        }
+      }));
     }
 
     long CountFolders(DirectoryInfo dir, string searchPattern, string exclude) {

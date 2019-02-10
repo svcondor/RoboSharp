@@ -70,9 +70,9 @@
                   </StackPanel.Resources>
                   <Label Content="Folders:" />
                   <Label Content="Files:" />
-                  <Label Content="MBytes:" />
+                  <Label Content="Bytes:" />
                   <Label Content="Files Skipped:" />
-                  <Label Content="MBytes Skipped:" />
+                  <Label Content="Bytes Skipped:" />
                   <Label Content="Errors:" />
                   <Label Content="Time Left :" />
                   <Label Content="Total Time :" />
@@ -90,7 +90,7 @@
                       <Setter Property="Margin" Value="5" />
                       <Setter Property="Height" Value="23" />
                       <Setter Property="HorizontalContentAlignment" Value="Right" />
-                      <Setter Property="Width" Value="80" />
+                      <Setter Property="Width" Value="120" />
                       <Setter Property="HorizontalAlignment" Value="Left" />
                     </Style>
                   </StackPanel.Resources>
