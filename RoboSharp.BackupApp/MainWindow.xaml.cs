@@ -319,6 +319,7 @@ namespace RoboSharp.BackupApp {
     }
 
     void copy_OnCommandCompleted(object sender, RoboCommandCompletedEventArgs e) {
+      Debug.WriteLine("CommandCompleted");
       Dispatcher.BeginInvoke((Action)(() => {
         backupIsRunning = false;
         RunTimer.Stop();
@@ -422,8 +423,10 @@ namespace RoboSharp.BackupApp {
     }
 
     void Window_ContentRendered(object sender, EventArgs e) {
-      Source.Text = @"G:\Public\Gitrepos\0misc";
-      Destination.Text = @"F:\Gitrepos2\0misc";
+      Source.Text = @"G:\Public\Files1";
+      Destination.Text = @"F:\Gitrepos2\Files1";
+      //Source.Text = @"G:\Public\Gitrepos\0misc";
+      //Destination.Text = @"F:\Gitrepos2\0misc";
       //Source.Text = @"G:\Public\Source";
       //Destination.Text = @"F:\Source";
       CopySubdirectoriesIncludingEmpty.IsChecked = true;
@@ -509,8 +512,10 @@ namespace RoboSharp.BackupApp {
             if (cf != null && tf.FolderCount != 0) {
               if (cf.ShowFile) {
               }
-              txtMBytes.Text = $"{Math.Round((double)tf.BytesCopied / 1024.0 / 1024.0):#,##0}";
-              txtMBytesSkipped.Text = $"{Math.Round((double)tf.BytesSkipped / 1024.0 / 1024.0):#,##0}";
+              //txtMBytes.Text = $"{Math.Round((double)tf.BytesCopied / 1024.0 / 1024.0):#,##0}";
+              //txtMBytesSkipped.Text = $"{Math.Round((double)tf.BytesSkipped / 1024.0 / 1024.0):#,##0}";
+              txtMBytes.Text = $"{tf.BytesCopied:#,##0}";
+              txtMBytesSkipped.Text = $"{tf.BytesSkipped:#,##0}";
               txtFiles.Text = $"{(tf.FilesCopied):#,##0}";
               txtFilesSkipped.Text = $"{(tf.FilesSkipped):#,##0}";
               txtFolders.Text = $"{(tf.FolderCount):#,##0}";
