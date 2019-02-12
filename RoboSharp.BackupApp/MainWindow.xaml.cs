@@ -38,8 +38,13 @@ namespace RoboSharp.BackupApp {
     Stopwatch PauseTimer = new Stopwatch();
     string source;
     string exclude;
+    OptionsControl optionsControl;
+    double MbsMax;
+    Excel.Application ExcelApp;
+
     public MainWindow() {
       InitializeComponent();
+      optionsControl = OptionsControlI;
       this.Closing += MainWindow_Closing;
       this.ContentRendered += Window_ContentRendered;
       ErrorGrid.ItemsSource = Errors;
@@ -77,9 +82,17 @@ namespace RoboSharp.BackupApp {
       txtFolders.Text = "";
       txtFilePc.Text = "";
       txtTotalTime.Text = "";
-      copy = BuildRobocopyParameters();
+      copy = new RoboCommand();
+      copy.OnFileProcessed += copy_OnFileProcessed;
+      copy.OnCommandError += copy_OnCommandError;
+      copy.OnError += copy_OnError;
+      copy.OnCopyProgressChanged += copy_OnCopyProgressChanged;
+      copy.OnCommandCompleted += copy_OnCommandCompleted;
+      copy.CopyOptions.Source = Source.Text;
+      copy.CopyOptions.Destination = Destination.Text;
+
+      optionsControl.BuildRobocopyParameters(copy);
       //Debug.WriteLine("After BuildRobocopyParameters()");
-      Parameters.Text = "ROBOCOPY " + copy.CommandOptions;
       //Debug.WriteLine("After copy.CommandOptions");
       SourceLower = Source.Text.ToLower();
       DestinationLower = Destination.Text.ToLower();
@@ -89,81 +102,6 @@ namespace RoboSharp.BackupApp {
       cf.ClearFileData();
       tf = new Totals();
       ScanThenCopy();
-    }
-
-    RoboCommand BuildRobocopyParameters() {
-      //Debugger.Instance.DebugMessageEvent += DebugMessage;
-      //Debug.WriteLine("b4 new RoboCommand()");
-      copy = new RoboCommand();
-      //Debug.WriteLine("after new RoboCommand()");
-
-      copy.OnFileProcessed += copy_OnFileProcessed;
-      copy.OnCommandError += copy_OnCommandError;
-      copy.OnError += copy_OnError;
-      copy.OnCopyProgressChanged += copy_OnCopyProgressChanged;
-      copy.OnCommandCompleted += copy_OnCommandCompleted;
-      // copy options
-      copy.CopyOptions.Source = Source.Text;
-      copy.CopyOptions.Destination = Destination.Text;
-      copy.CopyOptions.FileFilter = FileFilter.Text;
-      copy.CopyOptions.CopySubdirectories = CopySubDirectories.IsChecked ?? false;
-      copy.CopyOptions.CopySubdirectoriesIncludingEmpty = CopySubdirectoriesIncludingEmpty.IsChecked ?? false;
-      if (!string.IsNullOrWhiteSpace(Depth.Text))
-        copy.CopyOptions.Depth = Convert.ToInt32(Depth.Text);
-      copy.CopyOptions.EnableRestartMode = EnableRestartMode.IsChecked ?? false;
-      copy.CopyOptions.EnableBackupMode = EnableBackupMode.IsChecked ?? false;
-      copy.CopyOptions.EnableRestartModeWithBackupFallback = EnableRestartModeWithBackupFallback.IsChecked ?? false;
-      copy.CopyOptions.UseUnbufferedIo = UseUnbufferedIo.IsChecked ?? false;
-      copy.CopyOptions.EnableEfsRawMode = EnableEfsRawMode.IsChecked ?? false;
-      copy.CopyOptions.CopyFlags = CopyFlags.Text;
-      copy.CopyOptions.CopyFilesWithSecurity = CopyFilesWithSecurity.IsChecked ?? false;
-      copy.CopyOptions.CopyAll = CopyAll.IsChecked ?? false;
-      copy.CopyOptions.RemoveFileInformation = RemoveFileInformation.IsChecked ?? false;
-      copy.CopyOptions.FixFileSecurityOnAllFiles = FixFileSecurityOnAllFiles.IsChecked ?? false;
-      copy.CopyOptions.FixFileTimesOnAllFiles = FixFileTimesOnAllFiles.IsChecked ?? false;
-      copy.CopyOptions.Purge = Purge.IsChecked ?? false;
-      copy.CopyOptions.Mirror = Mirror.IsChecked ?? false;
-      copy.CopyOptions.MoveFiles = MoveFiles.IsChecked ?? false;
-      copy.CopyOptions.MoveFilesAndDirectories = MoveFilesAndDirectories.IsChecked ?? false;
-      copy.CopyOptions.AddAttributes = AddAttributes.Text;
-      copy.CopyOptions.RemoveAttributes = RemoveAttributes.Text;
-      copy.CopyOptions.CreateDirectoryAndFileTree = CreateDirectoryAndFileTree.IsChecked ?? false;
-      copy.CopyOptions.FatFiles = FatFiles.IsChecked ?? false;
-      copy.CopyOptions.TurnLongPathSupportOff = TurnLongPathSupportOff.IsChecked ?? false;
-      if (!string.IsNullOrWhiteSpace(MonitorSourceChangesLimit.Text))
-        copy.CopyOptions.MonitorSourceChangesLimit = Convert.ToInt32(MonitorSourceChangesLimit.Text);
-      if (!string.IsNullOrWhiteSpace(MonitorSourceTimeLimit.Text))
-        copy.CopyOptions.MonitorSourceTimeLimit = Convert.ToInt32(MonitorSourceTimeLimit.Text);
-
-      // select options
-      copy.SelectionOptions.OnlyCopyArchiveFiles = OnlyCopyArchiveFiles.IsChecked ?? false;
-      copy.SelectionOptions.OnlyCopyArchiveFilesAndResetArchiveFlag = OnlyCopyArchiveFilesAndResetArchiveFlag.IsChecked ?? false;
-      copy.SelectionOptions.IncludeAttributes = IncludeAttributes.Text;
-      copy.SelectionOptions.ExcludeAttributes = ExcludeAttributes.Text;
-      copy.SelectionOptions.ExcludeFiles = ExcludeFiles.Text;
-      copy.SelectionOptions.ExcludeDirectories = ExcludeDirectories.Text;
-      copy.SelectionOptions.ExcludeOlder = ExcludeOlder.IsChecked ?? false;
-      copy.SelectionOptions.ExcludeJunctionPoints = ExcludeJunctionPoints.IsChecked ?? false;
-
-      // retry options
-      if (!string.IsNullOrWhiteSpace(RetryCount.Text))
-        copy.RetryOptions.RetryCount = Convert.ToInt32(RetryCount.Text);
-      if (!string.IsNullOrWhiteSpace(RetryWaitTime.Text))
-        copy.RetryOptions.RetryWaitTime = Convert.ToInt32(RetryWaitTime.Text);
-
-      // logging options
-      copy.LoggingOptions.VerboseOutput = VerboseOutput.IsChecked ?? false;
-      copy.LoggingOptions.NoFileSizes = NoFileSizes.IsChecked ?? false;
-      copy.LoggingOptions.NoProgress = NoProgress.IsChecked ?? false;
-      copy.LoggingOptions.ListOnly = ListOnly.IsChecked ?? false;
-      copy.LoggingOptions.NoFileList = NoFileList.IsChecked ?? false;
-      copy.LoggingOptions.NoDirectoryList = NoDirectoryList.IsChecked ?? false;
-      copy.LoggingOptions.ReportExtraFiles = ReportExtraFiles.IsChecked ?? false;
-      //Debug.WriteLine($"{DateTime.Now} before copy.Start");
-      //copy.Start();
-      //Debug.WriteLine($"{DateTime.Now} After copy.Start");
-      //var v6 = copy.CommandOptions;
-      return copy;
     }
 
     void DebugMessage(object sender, RoboSharp.Debugger.DebugMessageArgs e) {
@@ -354,10 +292,18 @@ namespace RoboSharp.BackupApp {
     }
 
     void SourceBrowseButton_Click(object sender, RoutedEventArgs e) {
-      var app = new Excel.Application();
-      var fileDialog = app.get_FileDialog
+      // https://wellsr.com/vba/2016/excel/vba-select-folder-with-msoFileDialogFolderPicker/
+      // https://bytes.com/topic/access/insights/916710-select-file-folder-using-filedialog-object
+      if (ExcelApp == null) {
+        ExcelApp = new Excel.Application();
+      }
+      var fileDialog = ExcelApp.get_FileDialog
         (Office.MsoFileDialogType.msoFileDialogFolderPicker);
-      fileDialog.InitialFileName = Source.Text; //something you want
+      fileDialog.InitialFileName = Source.Text + "\\"; 
+      fileDialog.InitialView = Office.MsoFileDialogView.msoFileDialogViewDetails;
+      fileDialog.ButtonName = "Select Folder";
+      fileDialog.Title = "Select Folder";
+      fileDialog.AllowMultiSelect = true;
       int result = fileDialog.Show();
       if (result == -1 && fileDialog.SelectedItems.Count > 0) {
         Source.Text = fileDialog.SelectedItems.Cast<string>().ToArray()[0];
@@ -365,32 +311,19 @@ namespace RoboSharp.BackupApp {
     }
 
     void DestinationBrowseButton_Click(object sender, RoutedEventArgs e) {
-      var app = new Excel.Application();
-      var fileDialog = app.get_FileDialog
+      if (ExcelApp == null) {
+        ExcelApp = new Excel.Application();
+      }
+      var fileDialog = ExcelApp.get_FileDialog
         (Office.MsoFileDialogType.msoFileDialogFolderPicker);
-      fileDialog.InitialFileName = Destination.Text;
+      fileDialog.InitialFileName = Destination.Text + "\\";
+      fileDialog.InitialView = Office.MsoFileDialogView.msoFileDialogViewDetails;
+      fileDialog.ButtonName = "Select Folder";
+      fileDialog.Title = "Select Folder";
       int result = fileDialog.Show();
       if (result == -1 && fileDialog.SelectedItems.Count > 0) {
         Destination.Text = fileDialog.SelectedItems.Cast<string>().ToArray()[0];
       }
-    }
-
-    void IsNumeric_PreviewTextInput(object sender, TextCompositionEventArgs e) {
-      e.Handled = !IsInt(e.Text);
-    }
-
-    void IsAttribute_PreviewTextInput(object sender, TextCompositionEventArgs e) {
-      if (!Regex.IsMatch(e.Text, @"^[a-zA-Z]+$"))
-        e.Handled = true;
-      if ("bcefghijklmnpqrvwxyzBCEFGHIJKLMNPQRVWXYZ".Contains(e.Text))
-        e.Handled = true;
-      if (((TextBox)sender).Text.Contains(e.Text))
-        e.Handled = true;
-    }
-
-    public static bool IsInt(string text) {
-      Regex regex = new Regex("[^0-9]+$");
-      return !regex.IsMatch(text);
     }
 
     void CancelButton_Click(object sender, RoutedEventArgs e) {
@@ -418,14 +351,6 @@ namespace RoboSharp.BackupApp {
       Destination.Text = @"F:\Gitrepos2\0misc";
       //Source.Text = @"G:\Public\Source";
       //Destination.Text = @"F:\Source";
-      CopySubdirectoriesIncludingEmpty.IsChecked = true;
-      ExcludeDirectories.Text = "node_modules";
-      VerboseOutput.IsChecked = true;
-      VerboseOutput.IsEnabled = false;
-      NoFileSizes.IsEnabled = false;
-      NoProgress.IsEnabled = false;
-      NoFileList.IsEnabled = false;
-      NoDirectoryList.IsEnabled = false;
       MessageBoxHelper.PrepToCenterMessageBoxOnForm(this);
     }
 
@@ -441,7 +366,7 @@ namespace RoboSharp.BackupApp {
       PauseButton.IsEnabled = true;
       BackupButton.IsEnabled = false;
       source = Source.Text;
-      exclude = ExcludeDirectories.Text;
+      exclude = optionsControl.ExcludeDirectories.Text;
       if (backupIsRunning) {
       }
       backupIsRunning = true;
@@ -479,6 +404,8 @@ namespace RoboSharp.BackupApp {
     }
 
     private async Task ShowProgressAsync() {
+      ByteRate.Reset();
+      MbsMax = 20;
       if (!prepareIsRunning) {
       }
       while (backupIsRunning || cf.FileName != "") {
@@ -555,10 +482,20 @@ namespace RoboSharp.BackupApp {
               txtTimeLeft.Text = $"{ts1:hh\\:mm\\:ss\\.f}";
               DateTime ETA = DateTime.Now + ts1 + PauseTimer.Elapsed;
               txtETA.Text = $"{ETA:HH:mm:ss}";
-              //TODO Track last 10 or 100 iterations
-              //Only include if bytes were xfered
+              //TODO Track last 50 iterations
               double mbs = (double)tf.BytesCopied / 1024.0 / 1024.0 / ts.TotalSeconds;
               txtMBytesSec.Text = $"{mbs:#,##0.0}";
+              if (mbs > MbsMax * 0.6) {
+                MbsMax *= 1.2;
+                MbsProgress.Maximum = MbsMax;
+              }
+              else if (mbs < MbsMax * 0.4) {
+                MbsMax *= 0.8;
+                MbsProgress.Maximum = MbsMax;
+              }
+              double mbs2 = ByteRate.Add(tf.BytesCopied, ts.TotalMilliseconds);
+              txtMBytesSec2.Text = $"{mbs2:#,##0.0}";
+              MbsProgress.Value = mbs2;
             }
           }
           catch (Exception e1) {
@@ -566,6 +503,10 @@ namespace RoboSharp.BackupApp {
           }
         }
       }));
+    }
+
+    private double GetBitRate(double bytesCopied, double totalMilliseconds) {
+      throw new NotImplementedException();
     }
 
     long CountFolders(DirectoryInfo dir, string searchPattern, string exclude) {

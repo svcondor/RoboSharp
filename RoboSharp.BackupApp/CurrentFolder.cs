@@ -31,7 +31,7 @@ namespace RoboSharp.BackupApp {
     public long FilesSkipped { get; set; } // Current files count
     public long FilesCopied { get; set; } // Current files count
     public long BytesSkipped { get; set; }
-    public long BytesCopied { get; set; }
+    public double BytesCopied { get; set; }
     public long ExtraFileCount { get; set; }
     public long ExtraByteCount { get; set; }
     public long FolderCount { get; set; }
